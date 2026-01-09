@@ -1,0 +1,12 @@
+services:
+  django:
+    build: .
+    container_name: django_app
+    ports:
+      - 8000:8000
+    volumes:
+      - django_db:/django-app/db
+
+
+volumes:
+  django_db:

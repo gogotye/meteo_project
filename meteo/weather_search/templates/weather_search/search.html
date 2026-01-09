@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+{% load filters %}
+
+{% block head_extra %}
+<!-- Awesomplete -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+    <script src="{% static 'weather_search/js/autocomplete.js' %}"></script>
+{% endblock %}
+
+
+{% block auth_status %}
+    {% if not user.is_authenticated %}
+    <div class="auth-prompt-container">
+        <p>
+            <b>Хотите, чтобы история запросов сохранялась и была доступна с любого устройства?</b><br>
+            <a href="{% url 'user_auth:register' %}">Зарегистрируйтесь</a>
+            или <a href="{% url 'user_auth:login' %}">войдите</a> в аккаунт.
+        </p>
+    </div>
+{% else %}
+    <div class="auth-prompt-container">
+        <p>
+            <b>История будет сохраняться</b><br>
+            <span>Вы вошли как {{ user.username }}</span>
+            <form action="{% url 'user_auth:logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit">Выйти</button>
+            </form>
+        </p>
+    </div>
+{% endif %}
+{% endblock %}
+
+
+{% block history %}
+    {% if city_history %}
+    <div class="history-container">
+        <h2 class="center">История запросов</h2>
+        <ul>
+            {% for item in city_history %}
+            <li data-history-city>
+                <a href="{% url 'weather_search:search' %}?{{ item|dict_to_querystring }}"
+                   title="Показать прогноз погоды в {{ city }} на {{ forecast_days }} дней" class="history-link">
+                    {{ item.city }}
+                    <span>[{{ item.admin }}]</span>
+                    <span>[{{ item.country }} ({{ item.country_code }})]</span>
+                    <span>[{{ item.forecast_days }} дн.]</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+{% endblock %}
+
+
+{% block content %}
+<div class="search-container">
+    <h1 class="center">Поиск города</h1>
+    <form class="center" method="get" action="{% url 'weather_search:search' %}">
+        <div>
+            <input id="city-input" data-autocomplete-url="{% url 'search_field_autocomplete:autocomplete_city' %}"
+                   type="text" name="city" placeholder="Введите название города" autocomplete="off" required>
+        </div>
+        <div>
+            <input type="number" name="forecast_days" placeholder="Кол-во дней"
+                   style="appearance: textfield;">
+            <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                Введите количество дней прогноза (от 1 до 16)
+            </div>
+        </div>
+
+        <input type="hidden" id="city-selection" name="selection">
+
+        <div>
+            <button type="submit">Найти</button>
+        </div>
+    </form>
+</div>
+
+{% if city_name %}
+<div class="search-container">
+    <div class="result" data-forecast-days="{{ forecast_days }}">
+        <h2 class="center">Результат</h2>
+        <p><strong>Город:</strong> {{ city_name }}{% if country %}, {{ country }}{% endif %} {% if admin %}({{ admin }}){% endif %}</p>
+        <p><strong>Широта:</strong> {{ latitude }}</p>
+        <p><strong>Долгота:</strong> {{ longitude }}</p>
+    </div>
+
+    {% if current_weather %}
+        <div class="weather-block">
+            <h3>Текущая погода</h3>
+            <p><strong>Температура:</strong> {{ current_weather.temperature }} °C</p>
+            <p><strong>Ощущается как:</strong> {{ current_weather.apparent_temperature }} °C</p>
+            <p><strong>Влажность:</strong> {{ current_weather.humidity }} %</p>
+            <p><strong>Осадки:</strong> {{ current_weather.rain }} мм</p>
+            <p><strong>Сейчас:</strong> {% if current_weather.is_day %}День{% else %}Ночь{% endif %}</p>
+        </div>
+    {% endif %}
+
+    <h3>Почасовой прогноз</h3>
+    {% if hourly_by_day  %}
+        {% for date, hours in hourly_by_day.items %}
+            <div class="weather-block">
+                <h3 class="day-title">{{ date }}</h3>
+                <table class="weather-table">
+                    <thead>
+                    <tr>
+                        <th>Время</th>
+                        <th>Температура (°C)</th>
+                        <th>Ощущается (°C)</th>
+                        <th>Влажность (%)</th>
+                        <th>Осадки (мм)</th>
+                        <th>День/Ночь</th>
+                        <th>Ветер (м/с)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for hour in hours %}
+                        <tr data-hour-row>
+                            <td>{{ hour.time }}</td>
+                            <td>{{ hour.temperature }}</td>
+                            <td>{{ hour.apparent_temperature }}</td>
+                            <td>{{ hour.humidity }}</td>
+                            <td>{{ hour.rain }}</td>
+                            <td>{% if hour.is_day %}День{% else %}Ночь{% endif %}</td>
+                            <td>{{ hour.wind_speed }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+        {% endif %}
+    {% endif %}
+
+    {% if error %}
+        <div class="result center" style="color: red">
+            <p>{{ error }}</p>
+        </div>
+</div>
+{% endif %}
+{% endblock %}

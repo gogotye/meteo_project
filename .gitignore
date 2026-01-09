@@ -1,0 +1,23 @@
+# ===== PyCharm / IDE =====
+.idea/
+
+# ===== Virtual environments =====
+venv/
+.env/
+.venv/
+venv_for_django_meteo/
+
+# ===== Python cache / bytecode =====
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ===== Django =====
+*.log
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# ===== Environment variables =====
+.env
+.env.*
